@@ -80,8 +80,8 @@ class SettingsViewFactory(private val context: Context) {
         })
 
         content.addView(settingsCard("작동 방식") {
-            addView(statusRow("저장 전 확인", "항상 켜짐"))
-            addView(statusRow("AI 사용", "꺼짐 · 오프라인 기본 모드"), rowParams(top = 10))
+            addView(statusRow("저장 전 확인:", "항상 켜짐"))
+            addView(statusRow("AI 사용:", "꺼짐 (오프라인 기본 모드)"), rowParams(top = 10))
         }, sectionParams())
 
         content.addView(settingsCard("기억한 분류 규칙") {
