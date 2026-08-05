@@ -224,6 +224,7 @@ class HomeViewFactory(private val context: Context) {
 
     private fun settingsButton(onSettings: () -> Unit): MaterialButton =
         premiumSecondaryButton(themedContext, "분류 및 기본값 설정").apply {
+            id = R.id.home_settings
             contentDescription = "오프라인 분류 및 기본값 설정 열기"
             setOnClickListener { onSettings() }
         }
