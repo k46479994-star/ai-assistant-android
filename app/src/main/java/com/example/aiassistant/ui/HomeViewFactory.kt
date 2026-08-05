@@ -3,8 +3,8 @@ package com.example.aiassistant.ui
 import android.content.Context
 import android.graphics.Typeface
 import android.view.ContextThemeWrapper
-import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -45,9 +45,9 @@ class HomeViewFactory(private val context: Context) {
             clipToPadding = false
             addView(
                 content,
-                ScrollView.LayoutParams(
-                    ScrollView.LayoutParams.MATCH_PARENT,
-                    ScrollView.LayoutParams.WRAP_CONTENT
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 )
             )
         }
