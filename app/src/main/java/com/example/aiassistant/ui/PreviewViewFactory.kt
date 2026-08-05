@@ -1,10 +1,11 @@
 package com.example.aiassistant.ui
 
 import android.content.Context
-import android.graphics.Color
+import android.graphics.Typeface
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
+import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.View
 import android.widget.AdapterView
@@ -21,9 +22,11 @@ import com.example.aiassistant.classification.DraftValidationResult
 import com.example.aiassistant.classification.InputType as ClassifiedInputType
 import com.example.aiassistant.classification.ItemDraft
 import com.example.aiassistant.classification.KeywordCandidateExtractor
+import com.google.android.material.button.MaterialButton
 import java.time.LocalDate
 
 class PreviewViewFactory(private val context: Context) {
+    private val themedContext: Context = ContextThemeWrapper(context, R.style.Theme_AiAssistant)
     private val concreteTypeOptions = listOf(
         TypeOption("일정", ClassifiedInputType.EVENT),
         TypeOption("할 일", ClassifiedInputType.TASK),
@@ -36,80 +39,123 @@ class PreviewViewFactory(private val context: Context) {
         onSave: (ItemDraft, RememberSelection?) -> Unit,
         onTypeChanged: (ClassifiedInputType) -> Unit
     ): PreviewView {
-        val root = PreviewView(context).apply {
+        val root = PreviewView(themedContext).apply {
             id = R.id.screen_preview
             orientation = LinearLayout.VERTICAL
-            setPadding(28, 24, 28, 24)
+            setBackgroundColor(PremiumColors.Background)
+            setPadding(
+                themedContext.dp(PremiumDimens.ScreenPaddingDp),
+                themedContext.dp(18),
+                themedContext.dp(PremiumDimens.ScreenPaddingDp),
+                themedContext.dp(28)
+            )
         }
 
-        root.addView(TextView(context).apply {
+        root.addView(TextView(themedContext).apply {
             text = "저장 전 확인"
-            textSize = 27f
-            setTextColor(Color.rgb(35, 31, 58))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            textSize = 28f
+            setTextColor(PremiumColors.TextPrimary)
+            setTypeface(typeface, Typeface.BOLD)
         })
-        root.addView(TextView(context).apply {
-            text = "분류와 저장될 내용을 확인하거나 수정해 주세요."
-            textSize = 14f
-            setTextColor(Color.rgb(92, 88, 112))
-            setPadding(0, 6, 0, 16)
-        })
+        root.addView(premiumBodyText(
+            themedContext,
+            "분류 결과와 저장될 내용을 확인하거나 수정해 주세요."
+        ).apply { setPadding(0, themedContext.dp(5), 0, themedContext.dp(16)) })
+
+        val summaryCard = premiumCard(themedContext).apply {
+            addView(LinearLayout(themedContext).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(
+                    themedContext.dp(18),
+                    themedContext.dp(18),
+                    themedContext.dp(18),
+                    themedContext.dp(18)
+                )
+                addView(premiumSectionTitle(themedContext, "입력 내용"))
+                addView(TextView(themedContext).apply {
+                    text = result.originalText
+                    textSize = 16f
+                    setTextColor(PremiumColors.TextPrimary)
+                    setPadding(0, themedContext.dp(8), 0, 0)
+                })
+            })
+        }
+        root.addView(summaryCard)
+
+        val form = LinearLayout(themedContext).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(
+                themedContext.dp(18),
+                themedContext.dp(18),
+                themedContext.dp(18),
+                themedContext.dp(18)
+            )
+            addView(premiumSectionTitle(themedContext, "저장 정보"))
+        }
+        val formCard = premiumCard(themedContext).apply { addView(form) }
+        root.addView(
+            formCard,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = themedContext.dp(12) }
+        )
 
         val typeOptions = if (result.suggestedType == ClassifiedInputType.AMBIGUOUS) {
             listOf(TypeOption("유형 선택", ClassifiedInputType.AMBIGUOUS)) + concreteTypeOptions
         } else {
             concreteTypeOptions
         }
-        val spinner = Spinner(context).apply {
+        val spinner = Spinner(themedContext).apply {
             id = R.id.preview_type
             adapter = ArrayAdapter(
-                context,
+                themedContext,
                 android.R.layout.simple_spinner_item,
                 typeOptions.map { it.label }
             ).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
         }
-        addLabeledView(root, "분류", spinner)
+        addLabeledView(form, "분류", spinner)
 
-        val titleInput = EditText(context).apply {
+        val titleInput = EditText(themedContext).apply {
             id = R.id.preview_title
             setText(result.title)
             hint = "제목"
             setSingleLine(true)
         }
-        addLabeledView(root, "제목", titleInput)
+        addLabeledView(form, "제목", titleInput)
 
-        val dateContainer = LinearLayout(context).apply {
+        val dateContainer = LinearLayout(themedContext).apply {
             id = R.id.preview_task_fields
             orientation = LinearLayout.VERTICAL
         }
-        val dateInput = EditText(context).apply {
+        val dateInput = EditText(themedContext).apply {
             id = R.id.preview_date
             setText((result.taskDueDate ?: result.eventDate)?.toString().orEmpty())
             hint = "yyyy-MM-dd"
             setSingleLine(true)
         }
         addLabeledView(dateContainer, "날짜 또는 마감일", dateInput)
-        root.addView(dateContainer)
+        form.addView(dateContainer)
 
-        val eventFields = LinearLayout(context).apply {
+        val eventFields = LinearLayout(themedContext).apply {
             id = R.id.preview_event_fields
             orientation = LinearLayout.VERTICAL
         }
-        val timeInput = EditText(context).apply {
+        val timeInput = EditText(themedContext).apply {
             id = R.id.preview_time
             setText(result.eventStartTime?.toString().orEmpty())
             hint = "HH:mm"
             setSingleLine(true)
         }
-        val endTimeInput = EditText(context).apply {
+        val endTimeInput = EditText(themedContext).apply {
             id = R.id.preview_end_time
             setText(result.eventEndTime?.toString().orEmpty())
             hint = "비워두면 1시간 뒤"
             setSingleLine(true)
         }
-        val reminderInput = EditText(context).apply {
+        val reminderInput = EditText(themedContext).apply {
             id = R.id.preview_reminder
             setText(result.reminderMinutes?.toString().orEmpty())
             hint = "분 전"
@@ -119,55 +165,62 @@ class PreviewViewFactory(private val context: Context) {
         addLabeledView(eventFields, "시작 시간", timeInput)
         addLabeledView(eventFields, "종료 시간", endTimeInput)
         addLabeledView(eventFields, "알림(분 전)", reminderInput)
-        root.addView(eventFields)
+        form.addView(eventFields)
 
-        val remember = CheckBox(context).apply {
+        val remember = CheckBox(themedContext).apply {
             id = R.id.preview_remember
             text = "이 표현을 기억"
             visibility = View.GONE
+            setPadding(0, themedContext.dp(8), 0, 0)
         }
-        root.addView(remember)
+        form.addView(remember)
 
-        val keywordContainer = LinearLayout(context).apply {
+        val keywordContainer = LinearLayout(themedContext).apply {
             id = R.id.preview_keyword_container
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.START
             visibility = View.GONE
         }
-        root.addView(keywordContainer)
+        form.addView(keywordContainer)
 
-        val error = TextView(context).apply {
+        val error = TextView(themedContext).apply {
             id = R.id.preview_error
             visibility = View.GONE
-            setTextColor(Color.rgb(185, 28, 28))
-            setPadding(4, 10, 4, 4)
+            setTextColor(PremiumColors.Error)
+            setPadding(0, themedContext.dp(10), 0, 0)
         }
-        root.addView(error)
+        form.addView(error)
 
-        val actions = LinearLayout(context).apply {
+        val actions = LinearLayout(themedContext).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.END
         }
-        val cancel = Button(context).apply {
+        val cancel = premiumSecondaryButton(themedContext, "취소").apply {
             id = R.id.preview_cancel
-            text = "취소"
-            isAllCaps = false
+            contentDescription = "저장 취소"
             setOnClickListener { onCancel() }
         }
-        val save = Button(context).apply {
+        val save = premiumPrimaryButton(themedContext, "저장").apply {
             id = R.id.preview_save
-            text = "저장"
-            isAllCaps = false
+            contentDescription = "확인한 내용 저장"
         }
         actions.addView(
             cancel,
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { marginEnd = themedContext.dp(6) }
         )
         actions.addView(
             save,
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { marginStart = themedContext.dp(6) }
         )
-        root.addView(actions)
+        root.addView(
+            actions,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = themedContext.dp(14) }
+        )
         root.attachControls(save, error)
 
         val candidateExtractor = KeywordCandidateExtractor()
@@ -178,10 +231,8 @@ class PreviewViewFactory(private val context: Context) {
         var selectedKeyword: String? = null
         val keywordButtons = mutableListOf<Button>()
         candidates.forEach { keyword ->
-            val button = Button(context).apply {
-                text = keyword
+            val button = premiumSecondaryButton(themedContext, keyword).apply {
                 textSize = 12f
-                isAllCaps = false
                 setOnClickListener {
                     selectedKeyword = keyword
                     keywordButtons.forEach { it.alpha = 0.55f }
@@ -213,6 +264,11 @@ class PreviewViewFactory(private val context: Context) {
             } else {
                 "저장"
             }
+            save.contentDescription = if (currentType == ClassifiedInputType.EVENT) {
+                "캘린더에서 일정 저장 확인"
+            } else {
+                "확인한 내용 저장"
+            }
 
             val changed = currentType != ClassifiedInputType.AMBIGUOUS &&
                 currentType != result.suggestedType
@@ -243,9 +299,7 @@ class PreviewViewFactory(private val context: Context) {
 
             when (val validation = latestValidation) {
                 is DraftValidationResult.Valid -> root.setFormValidity(true, null)
-                is DraftValidationResult.Invalid -> {
-                    root.setFormValidity(false, validation.message)
-                }
+                is DraftValidationResult.Invalid -> root.setFormValidity(false, validation.message)
                 null -> root.setFormValidity(false, "저장할 내용을 확인해 주세요")
             }
         }
@@ -305,11 +359,11 @@ class PreviewViewFactory(private val context: Context) {
         label: String,
         view: View
     ) {
-        container.addView(TextView(context).apply {
+        container.addView(TextView(themedContext).apply {
             text = label
             textSize = 13f
-            setTextColor(Color.rgb(92, 88, 112))
-            setPadding(0, 8, 0, 3)
+            setTextColor(PremiumColors.TextSecondary)
+            setPadding(0, themedContext.dp(10), 0, themedContext.dp(4))
         })
         container.addView(
             view,
