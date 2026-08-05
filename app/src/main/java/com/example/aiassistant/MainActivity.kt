@@ -77,7 +77,13 @@ class MainActivity : AppCompatActivity() {
             Tab.TODO -> buildTodoView()
             Tab.SETTINGS -> buildSettingsView()
         }
-        contentContainer.addView(view)
+        contentContainer.addView(
+            view,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        )
     }
 
     private fun buildHomeView(): View {
