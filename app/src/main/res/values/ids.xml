@@ -13,7 +13,6 @@
     <item name="nav_calendar" type="id" />
     <item name="nav_tasks" type="id" />
     <item name="nav_notes" type="id" />
-
     <item name="home_quick_input" type="id" />
     <item name="home_settings" type="id" />
     <item name="task_filter_open" type="id" />
@@ -28,12 +27,14 @@
     <item name="settings_save" type="id" />
     <item name="settings_error" type="id" />
     <item name="settings_rule_list" type="id" />
-
+    <item name="settings_theme_swatches" type="id" />
+    <item name="settings_theme_hex" type="id" />
+    <item name="settings_theme_apply" type="id" />
+    <item name="settings_theme_error" type="id" />
     <item name="quick_input_text" type="id" />
     <item name="quick_input_submit" type="id" />
     <item name="quick_input_error" type="id" />
     <item name="quick_input_examples" type="id" />
-
     <item name="preview_type" type="id" />
     <item name="preview_title" type="id" />
     <item name="preview_date" type="id" />
