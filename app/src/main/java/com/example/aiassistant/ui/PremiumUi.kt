@@ -5,21 +5,43 @@ import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import kotlin.math.roundToInt
 
 object PremiumColors {
-    const val Primary: Int = 0xFF7C5CFF.toInt()
-    const val Secondary: Int = 0xFFA18CFF.toInt()
-    const val Background: Int = 0xFFF8F8FD.toInt()
-    const val Surface: Int = 0xFFFFFFFF.toInt()
-    const val SurfaceMuted: Int = 0xFFF1EEFF.toInt()
-    const val TextPrimary: Int = 0xFF231F3A.toInt()
-    const val TextSecondary: Int = 0xFF68637A.toInt()
+    var Primary: Int = AppThemeStore.DEFAULT_COLOR
+        private set
+    var Secondary: Int = 0xFFA18CFF.toInt()
+        private set
+    var Background: Int = 0xFFF8F8FD.toInt()
+        private set
+    var Surface: Int = 0xFFFFFFFF.toInt()
+        private set
+    var SurfaceMuted: Int = 0xFFF1EEFF.toInt()
+        private set
+    var TextPrimary: Int = 0xFF231F3A.toInt()
+        private set
+    var TextSecondary: Int = 0xFF565064.toInt()
+        private set
+    var NavigationUnselected: Int = 0xFF4F4A5C.toInt()
+        private set
+    var OnPrimary: Int = 0xFFFFFFFF.toInt()
+        private set
     const val Divider: Int = 0xFFE7E3F4.toInt()
     const val Error: Int = 0xFFB91C1C.toInt()
+
+    fun apply(palette: ThemePalette) {
+        Primary = palette.primary
+        Secondary = palette.secondary
+        Background = palette.background
+        Surface = palette.surface
+        SurfaceMuted = palette.surfaceMuted
+        TextPrimary = palette.textPrimary
+        TextSecondary = palette.textSecondary
+        NavigationUnselected = palette.navigationUnselected
+        OnPrimary = palette.onPrimary
+    }
 }
 
 object PremiumDimens {
@@ -48,7 +70,7 @@ fun premiumPrimaryButton(context: Context, label: String): MaterialButton =
         minHeight = context.dp(PremiumDimens.TouchTargetDp)
         cornerRadius = context.dp(18)
         backgroundTintList = ColorStateList.valueOf(PremiumColors.Primary)
-        setTextColor(PremiumColors.Surface)
+        setTextColor(PremiumColors.OnPrimary)
         textSize = 15f
         setTypeface(typeface, Typeface.BOLD)
         insetTop = 0
