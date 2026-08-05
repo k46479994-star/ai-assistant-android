@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="content_host" type="id" />
+    <item name="screen_home" type="id" />
+    <item name="screen_quick_input" type="id" />
+    <item name="screen_preview" type="id" />
+    <item name="screen_calendar" type="id" />
+    <item name="screen_tasks" type="id" />
+    <item name="screen_notes" type="id" />
+    <item name="screen_settings" type="id" />
+    <item name="nav_home" type="id" />
+    <item name="nav_quick_input" type="id" />
+    <item name="nav_calendar" type="id" />
+    <item name="nav_tasks" type="id" />
+    <item name="nav_notes" type="id" />
+</resources>
