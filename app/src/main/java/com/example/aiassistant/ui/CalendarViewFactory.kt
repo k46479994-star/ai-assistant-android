@@ -34,7 +34,7 @@ class CalendarViewFactory(private val context: Context) {
         })
         content.addView(premiumBodyText(
             themedContext,
-            "저장 전 내용을 확인하고 설치된 캘린더 앱에서 최종 등록합니다."
+            "저장 전 내용을 확인하고 캘린더 앱에서 최종 확인합니다."
         ).apply { setPadding(0, themedContext.dp(6), 0, themedContext.dp(16)) })
 
         content.addView(premiumCard(themedContext).apply {
@@ -63,7 +63,7 @@ class CalendarViewFactory(private val context: Context) {
                     gravity = Gravity.CENTER
                     setPadding(0, themedContext.dp(7), 0, themedContext.dp(18))
                 })
-                addView(premiumPrimaryButton(themedContext, "＋ 새 일정 만들기").apply {
+                addView(premiumPrimaryButton(themedContext, "새 일정").apply {
                     id = R.id.calendar_new_event
                     contentDescription = "새 일정 만들기"
                     setOnClickListener { onNewEvent("일정 추가: ") }
