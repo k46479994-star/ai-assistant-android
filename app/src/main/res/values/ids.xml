@@ -13,4 +13,23 @@
     <item name="nav_calendar" type="id" />
     <item name="nav_tasks" type="id" />
     <item name="nav_notes" type="id" />
+
+    <item name="quick_input_text" type="id" />
+    <item name="quick_input_submit" type="id" />
+    <item name="quick_input_error" type="id" />
+    <item name="quick_input_examples" type="id" />
+
+    <item name="preview_type" type="id" />
+    <item name="preview_title" type="id" />
+    <item name="preview_date" type="id" />
+    <item name="preview_time" type="id" />
+    <item name="preview_end_time" type="id" />
+    <item name="preview_reminder" type="id" />
+    <item name="preview_save" type="id" />
+    <item name="preview_cancel" type="id" />
+    <item name="preview_error" type="id" />
+    <item name="preview_remember" type="id" />
+    <item name="preview_keyword_container" type="id" />
+    <item name="preview_event_fields" type="id" />
+    <item name="preview_task_fields" type="id" />
 </resources>

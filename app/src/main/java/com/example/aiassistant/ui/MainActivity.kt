@@ -8,12 +8,28 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.aiassistant.AiAssistantApplication
 import com.example.aiassistant.R
+import com.example.aiassistant.classification.ClassificationResult
+import com.example.aiassistant.classification.EventDraft
+import com.example.aiassistant.classification.ItemDraft
+import com.example.aiassistant.classification.NoteDraft
+import com.example.aiassistant.classification.TaskDraft
+import java.time.ZonedDateTime
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+    private val container by lazy {
+        (application as AiAssistantApplication).container
+    }
+
     private lateinit var contentHost: FrameLayout
     private lateinit var settingsButton: Button
+    private var activeResult: ClassificationResult? = null
+    private var activePreview: PreviewView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +42,9 @@ class MainActivity : AppCompatActivity() {
             View.VISIBLE
         } else {
             View.GONE
+        }
+        if (screen != AppScreen.PREVIEW) {
+            activePreview = null
         }
 
         val screenView = createScreen(screen)
@@ -132,24 +151,133 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun createScreen(screen: AppScreen): View {
-        val (viewId, label) = when (screen) {
-            AppScreen.HOME -> R.id.screen_home to "홈"
-            AppScreen.QUICK_INPUT -> R.id.screen_quick_input to "빠른 입력"
-            AppScreen.PREVIEW -> R.id.screen_preview to "미리보기"
-            AppScreen.CALENDAR -> R.id.screen_calendar to "일정"
-            AppScreen.TASKS -> R.id.screen_tasks to "할 일"
-            AppScreen.NOTES -> R.id.screen_notes to "메모"
-            AppScreen.SETTINGS -> R.id.screen_settings to "설정"
-        }
+    private fun createScreen(screen: AppScreen): View = when (screen) {
+        AppScreen.HOME -> placeholder(R.id.screen_home, "홈")
+        AppScreen.QUICK_INPUT -> QuickInputViewFactory(this).create(::classifyInput)
+        AppScreen.PREVIEW -> createPreviewScreen()
+        AppScreen.CALENDAR -> placeholder(
+            R.id.screen_calendar,
+            "일정\n빠른 입력에서 일정을 만든 뒤 캘린더 앱에서 확인합니다."
+        )
+        AppScreen.TASKS -> placeholder(R.id.screen_tasks, "할 일")
+        AppScreen.NOTES -> placeholder(R.id.screen_notes, "메모")
+        AppScreen.SETTINGS -> placeholder(
+            R.id.screen_settings,
+            "설정\n기본 일정 60분 · 기본 알림 30분 전\nAI 사용은 기본적으로 꺼져 있습니다."
+        )
+    }
 
-        return TextView(this).apply {
-            id = viewId
-            text = label
-            gravity = Gravity.CENTER
-            textSize = 24f
-            setTextColor(Color.rgb(35, 31, 58))
+    private fun classifyInput(text: String) {
+        lifecycleScope.launch {
+            try {
+                activeResult = container.offlineInputProcessor.process(
+                    text = text,
+                    now = ZonedDateTime.now()
+                )
+                navigate(AppScreen.PREVIEW)
+            } catch (exception: IllegalArgumentException) {
+                Toast.makeText(
+                    this@MainActivity,
+                    exception.message ?: "입력 내용을 확인해 주세요",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (_: Exception) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "분류하지 못했습니다. 입력 내용은 기기 밖으로 전송되지 않았습니다.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
+    }
+
+    private fun createPreviewScreen(): View {
+        val result = activeResult ?: return placeholder(
+            R.id.screen_preview,
+            "분류할 내용이 없습니다. 빠른 입력에서 내용을 입력해 주세요."
+        )
+
+        return PreviewViewFactory(this).create(
+            result = result,
+            onCancel = {
+                activeResult = null
+                navigate(AppScreen.QUICK_INPUT)
+            },
+            onSave = ::saveDraft,
+            onTypeChanged = {}
+        ).also { activePreview = it }
+    }
+
+    private fun saveDraft(
+        draft: ItemDraft,
+        rememberSelection: RememberSelection?
+    ) {
+        val preview = activePreview ?: return
+        preview.setSaving(true)
+
+        lifecycleScope.launch {
+            try {
+                val now = System.currentTimeMillis()
+                val destination = when (draft) {
+                    is EventDraft -> {
+                        val launched = container.calendarGateway.launch(
+                            this@MainActivity,
+                            draft
+                        )
+                        if (!launched) {
+                            preview.setSaving(false)
+                            preview.showError("사용 가능한 캘린더 앱이 없습니다")
+                            return@launch
+                        }
+                        AppScreen.CALENDAR
+                    }
+
+                    is TaskDraft -> {
+                        container.taskRepository.insert(
+                            title = draft.title,
+                            originalText = draft.originalText,
+                            dueDate = draft.dueDate,
+                            nowEpochMillis = now
+                        )
+                        AppScreen.TASKS
+                    }
+
+                    is NoteDraft -> {
+                        container.noteRepository.insert(
+                            title = draft.title,
+                            body = draft.body,
+                            nowEpochMillis = now
+                        )
+                        AppScreen.NOTES
+                    }
+                }
+
+                if (rememberSelection != null) {
+                    container.learnedRuleStore.upsert(
+                        keyword = rememberSelection.normalizedKeyword,
+                        targetType = rememberSelection.targetType,
+                        nowEpochMillis = now
+                    )
+                }
+
+                activeResult = null
+                navigate(destination)
+            } catch (_: Exception) {
+                preview.setSaving(false)
+                preview.showError(
+                    "저장하지 못했습니다. 입력 내용은 유지됩니다. 다시 시도해 주세요."
+                )
+            }
+        }
+    }
+
+    private fun placeholder(id: Int, label: String): View = TextView(this).apply {
+        this.id = id
+        text = label
+        gravity = Gravity.CENTER
+        textSize = 22f
+        setTextColor(Color.rgb(35, 31, 58))
+        setPadding(24, 24, 24, 24)
     }
 
     private data class NavigationItem(
