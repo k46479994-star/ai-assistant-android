@@ -56,12 +56,16 @@ class QuickInputViewFactoryTest {
         assertTrue(countViews(view, MaterialCardView::class.java) >= 2)
 
         val input = view.findViewById<EditText>(R.id.quick_input_text)
+        val voice = view.findViewById<MaterialButton>(R.id.quick_input_voice)
         val submit = view.findViewById<MaterialButton>(R.id.quick_input_submit)
         val examples = view.findViewById<View>(R.id.quick_input_examples)
         assertNotNull(input)
+        assertNotNull(voice)
         assertNotNull(submit)
         assertNotNull(examples)
         assertEquals("내일 오후 3시 치과", input.text.toString())
+        assertTrue(voice.text.toString().contains("음성"))
+        assertTrue(voice.contentDescription.toString().contains("마이크"))
         assertEquals(PremiumColors.Primary, submit.backgroundTintList?.defaultColor)
         assertTrue(submit.contentDescription.toString().contains("분류"))
 
@@ -74,9 +78,7 @@ class QuickInputViewFactoryTest {
     private fun countViews(view: View, type: Class<out View>): Int {
         var count = if (type.isInstance(view)) 1 else 0
         if (view is ViewGroup) {
-            for (index in 0 until view.childCount) {
-                count += countViews(view.getChildAt(index), type)
-            }
+            for (index in 0 until view.childCount) count += countViews(view.getChildAt(index), type)
         }
         return count
     }
