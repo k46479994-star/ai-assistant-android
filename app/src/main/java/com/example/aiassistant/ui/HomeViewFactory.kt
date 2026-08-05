@@ -22,7 +22,7 @@ class HomeViewFactory(private val context: Context) {
     fun create(
         openTaskCount: Int,
         latestNotes: List<NoteEntity>,
-        onQuickInput: (String) -> Unit,
+        onQuickInput: () -> Unit,
         onSettings: () -> Unit
     ): View {
         val content = LinearLayout(themedContext).apply {
@@ -72,7 +72,7 @@ class HomeViewFactory(private val context: Context) {
         })
     }
 
-    private fun quickInputCard(onQuickInput: (String) -> Unit): MaterialCardView =
+    private fun quickInputCard(onQuickInput: () -> Unit): MaterialCardView =
         premiumCard(themedContext).apply {
             setCardBackgroundColor(PremiumColors.Primary)
             contentDescription = "일정, 할 일, 메모 빠른 입력"
@@ -128,7 +128,18 @@ class HomeViewFactory(private val context: Context) {
                     setTypeface(typeface, Typeface.BOLD)
                     insetTop = 0
                     insetBottom = 0
-                    setOnClickListener { onQuickInput(input.text.toString().trim()) }
+                    setOnClickListener {
+                        val text = input.text.toString().trim()
+                        onQuickInput()
+                        if (text.isNotEmpty()) {
+                            (context as? MainActivity)
+                                ?.findViewById<EditText>(R.id.quick_input_text)
+                                ?.apply {
+                                    setText(text)
+                                    setSelection(text.length)
+                                }
+                        }
+                    }
                 }, fullWidthParams().apply { topMargin = themedContext.dp(10) })
             })
         }
