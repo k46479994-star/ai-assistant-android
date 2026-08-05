@@ -1,5 +1,6 @@
 package com.example.aiassistant.ui
 
+import android.app.Activity
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -63,7 +64,11 @@ class SettingsViewFactory(private val context: Context) {
                     insetBottom = 0
                     backgroundTintList = ColorStateList.valueOf(color)
                     setTextColor(ThemePalette.from(color).onPrimary)
-                    setOnClickListener { pendingColor = color }
+                    setOnClickListener {
+                        pendingColor = color
+                        val swatchHex = String.format("#%06X", color and 0xFFFFFF)
+                        findViewById<EditText>(R.id.settings_theme_hex)?.setText(swatchHex)
+                    }
                 }, LinearLayout.LayoutParams(0, themedContext.dp(44), 1f).apply {
                     marginStart = themedContext.dp(2)
                     marginEnd = themedContext.dp(2)
@@ -98,7 +103,10 @@ class SettingsViewFactory(private val context: Context) {
                         themeError.visibility = View.VISIBLE
                     } else {
                         themeError.visibility = View.GONE
+                        AppThemeStore(context).saveSelectedColor(color)
+                        PremiumColors.apply(ThemePalette.from(color))
                         onThemeSelected(color)
+                        (context as? Activity)?.recreate()
                     }
                 }
             }, fullWidthParams().apply { topMargin = themedContext.dp(12) })
