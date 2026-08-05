@@ -1,10 +1,11 @@
 package com.example.aiassistant.ui
 
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,6 +19,7 @@ import com.example.aiassistant.classification.EventDraft
 import com.example.aiassistant.classification.ItemDraft
 import com.example.aiassistant.classification.NoteDraft
 import com.example.aiassistant.classification.TaskDraft
+import com.google.android.material.button.MaterialButton
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import kotlinx.coroutines.launch
@@ -28,7 +30,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var contentHost: FrameLayout
-    private lateinit var settingsButton: Button
+    private lateinit var settingsButton: MaterialButton
+    private val navigationButtons = linkedMapOf<AppScreen, MaterialButton>()
     private var activeResult: ClassificationResult? = null
     private var activePreview: PreviewView? = null
     private var currentScreen: AppScreen = AppScreen.HOME
@@ -49,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             View.GONE
         }
+        updateNavigationState(screen)
         if (screen != AppScreen.PREVIEW) {
             activePreview = null
         }
@@ -70,7 +74,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createRoot(): View = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
-        setBackgroundColor(Color.rgb(247, 247, 252))
+        setBackgroundColor(PremiumColors.Background)
 
         addView(
             createTopBar(),
@@ -82,6 +86,7 @@ class MainActivity : AppCompatActivity() {
 
         contentHost = FrameLayout(this@MainActivity).apply {
             id = R.id.content_host
+            setBackgroundColor(PremiumColors.Background)
         }
         addView(
             contentHost,
@@ -104,15 +109,24 @@ class MainActivity : AppCompatActivity() {
     private fun createTopBar(): View = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(24, 24, 16, 12)
-        setBackgroundColor(Color.WHITE)
+        setPadding(dp(20), dp(18), dp(16), dp(12))
+        setBackgroundColor(PremiumColors.Surface)
 
         addView(
-            TextView(this@MainActivity).apply {
-                text = getString(R.string.app_name)
-                textSize = 22f
-                setTextColor(Color.rgb(35, 31, 58))
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(TextView(this@MainActivity).apply {
+                    text = "오프라인 개인 비서"
+                    textSize = 12f
+                    setTextColor(PremiumColors.Primary)
+                    setTypeface(typeface, Typeface.BOLD)
+                })
+                addView(TextView(this@MainActivity).apply {
+                    text = getString(R.string.app_name)
+                    textSize = 23f
+                    setTextColor(PremiumColors.TextPrimary)
+                    setTypeface(typeface, Typeface.BOLD)
+                })
             },
             LinearLayout.LayoutParams(
                 0,
@@ -121,43 +135,84 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        settingsButton = Button(this@MainActivity).apply {
-            text = "설정"
-            isAllCaps = false
+        settingsButton = premiumSecondaryButton(this@MainActivity, "⚙").apply {
+            id = R.id.home_settings
+            contentDescription = "설정 열기"
+            textSize = 19f
+            minWidth = dp(PremiumDimens.TouchTargetDp)
+            setPadding(0, 0, 0, 0)
             setOnClickListener { navigate(AppScreen.SETTINGS) }
         }
-        addView(settingsButton)
+        addView(
+            settingsButton,
+            LinearLayout.LayoutParams(
+                dp(PremiumDimens.TouchTargetDp),
+                dp(PremiumDimens.TouchTargetDp)
+            )
+        )
     }
 
     private fun createBottomNavigation(): View = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER
-        setPadding(6, 8, 6, 12)
-        setBackgroundColor(Color.WHITE)
+        setPadding(dp(8), dp(8), dp(8), dp(12))
+        setBackgroundColor(PremiumColors.Surface)
+        elevation = dp(8).toFloat()
 
         val destinations = listOf(
-            NavigationItem(R.id.nav_home, "홈", AppScreen.HOME),
-            NavigationItem(R.id.nav_quick_input, "빠른 입력", AppScreen.QUICK_INPUT),
-            NavigationItem(R.id.nav_calendar, "일정", AppScreen.CALENDAR),
-            NavigationItem(R.id.nav_tasks, "할 일", AppScreen.TASKS),
-            NavigationItem(R.id.nav_notes, "메모", AppScreen.NOTES)
+            NavigationItem(R.id.nav_home, "⌂\n홈", "홈", AppScreen.HOME),
+            NavigationItem(R.id.nav_quick_input, "＋\n입력", "빠른 입력", AppScreen.QUICK_INPUT),
+            NavigationItem(R.id.nav_calendar, "▣\n일정", "일정", AppScreen.CALENDAR),
+            NavigationItem(R.id.nav_tasks, "✓\n할 일", "할 일", AppScreen.TASKS),
+            NavigationItem(R.id.nav_notes, "▤\n메모", "메모", AppScreen.NOTES)
         )
 
         destinations.forEach { item ->
+            val button = MaterialButton(this@MainActivity).apply {
+                id = item.id
+                text = item.visualLabel
+                contentDescription = item.accessibilityLabel
+                textSize = 11f
+                isAllCaps = false
+                minHeight = dp(56)
+                minWidth = 0
+                cornerRadius = dp(18)
+                insetTop = 0
+                insetBottom = 0
+                setPadding(dp(2), dp(4), dp(2), dp(4))
+                setOnClickListener { navigate(item.screen) }
+            }
+            navigationButtons[item.screen] = button
             addView(
-                Button(this@MainActivity).apply {
-                    id = item.id
-                    text = item.label
-                    textSize = 11f
-                    isAllCaps = false
-                    setOnClickListener { navigate(item.screen) }
-                },
+                button,
                 LinearLayout.LayoutParams(
                     0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    dp(60),
                     1f
-                )
+                ).apply {
+                    marginStart = dp(2)
+                    marginEnd = dp(2)
+                }
             )
+        }
+    }
+
+    private fun updateNavigationState(screen: AppScreen) {
+        val selectedScreen = when (screen) {
+            AppScreen.PREVIEW -> AppScreen.QUICK_INPUT
+            AppScreen.SETTINGS -> null
+            else -> screen
+        }
+        navigationButtons.forEach { (destination, button) ->
+            val selected = destination == selectedScreen
+            button.isSelected = selected
+            button.setTextColor(
+                if (selected) PremiumColors.Primary else PremiumColors.TextSecondary
+            )
+            button.backgroundTintList = ColorStateList.valueOf(
+                if (selected) PremiumColors.SurfaceMuted else PremiumColors.Surface
+            )
+            button.setTypeface(button.typeface, if (selected) Typeface.BOLD else Typeface.NORMAL)
         }
     }
 
@@ -459,14 +514,15 @@ class MainActivity : AppCompatActivity() {
         this.id = id
         text = label
         gravity = Gravity.CENTER
-        textSize = 18f
-        setTextColor(Color.rgb(92, 88, 112))
-        setPadding(24, 24, 24, 24)
+        textSize = 17f
+        setTextColor(PremiumColors.TextSecondary)
+        setPadding(dp(24), dp(24), dp(24), dp(24))
     }
 
     private data class NavigationItem(
         val id: Int,
-        val label: String,
+        val visualLabel: String,
+        val accessibilityLabel: String,
         val screen: AppScreen
     )
 }
