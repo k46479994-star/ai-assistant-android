@@ -133,9 +133,9 @@ class HomeViewFactory(private val context: Context) {
                 addView(premiumBodyText(
                     themedContext,
                     if (openTaskCount == 0) {
-                        "오늘 마감인 할 일이 없습니다."
+                        "오늘 마감 할 일 0개 · 여유로운 하루예요."
                     } else {
-                        "오늘 마감인 진행 중 할 일을 먼저 확인해 보세요."
+                        "오늘 마감 할 일 ${openTaskCount}개 · 먼저 확인해 보세요."
                     }
                 ))
             })
