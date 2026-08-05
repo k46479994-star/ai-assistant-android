@@ -33,7 +33,10 @@ class HomeViewFactory(private val context: Context) {
         openTaskCount: Int,
         latestNotes: List<NoteEntity>,
         onQuickInput: () -> Unit,
-        onSettings: () -> Unit
+        onSettings: () -> Unit,
+        onCalendar: (() -> Unit)? = null,
+        onTasks: (() -> Unit)? = null,
+        onNotes: (() -> Unit)? = null
     ): View {
         val content = LinearLayout(themedContext).apply {
             id = R.id.screen_home
@@ -48,8 +51,9 @@ class HomeViewFactory(private val context: Context) {
 
         content.addView(greeting())
         content.addView(quickInputCard(onQuickInput), sectionParams(top = 14))
-        content.addView(todaySummaryCard(openTaskCount), sectionParams(top = 12))
-        content.addView(recentNotesCard(latestNotes), sectionParams(top = 12))
+        content.addView(calendarCard(onCalendar), sectionParams(top = 12))
+        content.addView(todaySummaryCard(openTaskCount, onTasks), sectionParams(top = 12))
+        content.addView(recentNotesCard(latestNotes, onNotes), sectionParams(top = 12))
         content.addView(settingsButton(onSettings), sectionParams(top = 12))
 
         return PremiumHomeScrollView(themedContext).apply {
@@ -132,9 +136,7 @@ class HomeViewFactory(private val context: Context) {
                     minHeight = themedContext.dp(PremiumDimens.TouchTargetDp)
                     cornerRadius = themedContext.dp(18)
                     setTextColor(PremiumColors.Primary)
-                    backgroundTintList = android.content.res.ColorStateList.valueOf(
-                        PremiumColors.Surface
-                    )
+                    backgroundTintList = android.content.res.ColorStateList.valueOf(PremiumColors.Surface)
                     setTypeface(typeface, Typeface.BOLD)
                     insetTop = 0
                     insetBottom = 0
@@ -146,81 +148,150 @@ class HomeViewFactory(private val context: Context) {
             })
         }
 
-    private fun todaySummaryCard(openTaskCount: Int): MaterialCardView =
-        premiumCard(themedContext).apply {
-            addView(LinearLayout(themedContext).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(
-                    themedContext.dp(18),
-                    themedContext.dp(18),
-                    themedContext.dp(18),
-                    themedContext.dp(18)
-                )
-                addView(LinearLayout(themedContext).apply {
-                    orientation = LinearLayout.VERTICAL
-                    addView(premiumSectionTitle(themedContext, "오늘 할 일"))
-                    addView(premiumBodyText(
-                        themedContext,
-                        if (openTaskCount == 0) {
-                            "오늘 마감 할 일 0개 · 여유로운 하루예요."
-                        } else {
-                            "오늘 마감 할 일 ${openTaskCount}개 · 먼저 확인해 보세요."
-                        }
-                    ).apply { setPadding(0, themedContext.dp(4), 0, 0) })
-                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(TextView(themedContext).apply {
-                    text = "${openTaskCount}개"
-                    textSize = 28f
-                    setTextColor(PremiumColors.Primary)
-                    setTypeface(typeface, Typeface.BOLD)
+    private fun calendarCard(onCalendar: (() -> Unit)?): MaterialCardView =
+        dashboardCard(
+            icon = "📅",
+            title = "오늘 일정",
+            detail = "캘린더에서 확인",
+            contentDescription = "오늘 일정 화면 열기"
+        ) {
+            onCalendar?.invoke() ?: navigate(AppScreen.CALENDAR)
+        }
+
+    private fun todaySummaryCard(
+        openTaskCount: Int,
+        onTasks: (() -> Unit)?
+    ): MaterialCardView = dashboardCard(
+        icon = "✓",
+        title = "오늘 할 일",
+        detail = if (openTaskCount == 0) {
+            "오늘 마감 할 일 0개 · 여유로운 하루예요."
+        } else {
+            "오늘 마감 할 일 ${openTaskCount}개 · 먼저 확인해 보세요."
+        },
+        trailing = "${openTaskCount}개",
+        contentDescription = "오늘 할 일 목록 열기"
+    ) {
+        onTasks?.invoke() ?: navigate(AppScreen.TASKS)
+    }
+
+    private fun recentNotesCard(
+        latestNotes: List<NoteEntity>,
+        onNotes: (() -> Unit)?
+    ): MaterialCardView = premiumCard(themedContext).apply {
+        isClickable = true
+        isFocusable = true
+        contentDescription = "최근 메모 목록 열기"
+        setOnClickListener { onNotes?.invoke() ?: navigate(AppScreen.NOTES) }
+        addView(LinearLayout(themedContext).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(
+                themedContext.dp(18),
+                themedContext.dp(18),
+                themedContext.dp(18),
+                themedContext.dp(18)
+            )
+            addView(sectionHeader("📝", "최근 메모", "전체 보기"))
+            if (latestNotes.isEmpty()) {
+                addView(premiumBodyText(themedContext, "아직 저장된 메모가 없습니다.").apply {
+                    setPadding(0, themedContext.dp(8), 0, 0)
                 })
+            } else {
+                latestNotes.take(2).forEachIndexed { index, note ->
+                    if (index > 0) addView(divider())
+                    addView(TextView(themedContext).apply {
+                        text = note.title
+                        textSize = 15f
+                        setTextColor(PremiumColors.TextPrimary)
+                        setTypeface(typeface, Typeface.BOLD)
+                    })
+                    addView(premiumBodyText(themedContext, note.body.take(64)).apply {
+                        setPadding(0, themedContext.dp(3), 0, 0)
+                    })
+                }
+            }
+        })
+    }
+
+    private fun dashboardCard(
+        icon: String,
+        title: String,
+        detail: String,
+        trailing: String? = null,
+        contentDescription: String,
+        onClick: () -> Unit
+    ): MaterialCardView = premiumCard(themedContext).apply {
+        isClickable = true
+        isFocusable = true
+        this.contentDescription = contentDescription
+        setOnClickListener { onClick() }
+        addView(LinearLayout(themedContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(
+                themedContext.dp(18),
+                themedContext.dp(16),
+                themedContext.dp(18),
+                themedContext.dp(16)
+            )
+            addView(TextView(themedContext).apply {
+                text = icon
+                textSize = 24f
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(themedContext.dp(42), themedContext.dp(42)))
+            addView(LinearLayout(themedContext).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(premiumSectionTitle(themedContext, title))
+                addView(premiumBodyText(themedContext, detail).apply {
+                    setPadding(0, themedContext.dp(3), 0, 0)
+                })
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = themedContext.dp(10)
+            })
+            addView(TextView(themedContext).apply {
+                text = trailing ?: "›"
+                textSize = if (trailing == null) 26f else 22f
+                setTextColor(PremiumColors.Primary)
+                setTypeface(typeface, Typeface.BOLD)
+            })
+        })
+    }
+
+    private fun sectionHeader(icon: String, title: String, action: String): View =
+        LinearLayout(themedContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(TextView(themedContext).apply {
+                text = icon
+                textSize = 22f
+            })
+            addView(premiumSectionTitle(themedContext, title), LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            ).apply { marginStart = themedContext.dp(8) })
+            addView(TextView(themedContext).apply {
+                text = action
+                textSize = 13f
+                setTextColor(PremiumColors.Primary)
+                setTypeface(typeface, Typeface.BOLD)
             })
         }
 
-    private fun recentNotesCard(latestNotes: List<NoteEntity>): MaterialCardView =
-        premiumCard(themedContext).apply {
-            addView(LinearLayout(themedContext).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(
-                    themedContext.dp(18),
-                    themedContext.dp(18),
-                    themedContext.dp(18),
-                    themedContext.dp(18)
-                )
-                addView(premiumSectionTitle(themedContext, "최근 메모"))
-                if (latestNotes.isEmpty()) {
-                    addView(premiumBodyText(
-                        themedContext,
-                        "아직 저장된 메모가 없습니다."
-                    ).apply { setPadding(0, themedContext.dp(8), 0, 0) })
-                } else {
-                    latestNotes.take(2).forEachIndexed { index, note ->
-                        if (index > 0) {
-                            addView(View(themedContext).apply {
-                                setBackgroundColor(PremiumColors.Divider)
-                            }, LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.MATCH_PARENT,
-                                themedContext.dp(1)
-                            ).apply {
-                                topMargin = themedContext.dp(10)
-                                bottomMargin = themedContext.dp(10)
-                            })
-                        }
-                        addView(TextView(themedContext).apply {
-                            text = note.title
-                            textSize = 15f
-                            setTextColor(PremiumColors.TextPrimary)
-                            setTypeface(typeface, Typeface.BOLD)
-                        })
-                        addView(premiumBodyText(
-                            themedContext,
-                            note.body.take(64)
-                        ).apply { setPadding(0, themedContext.dp(3), 0, 0) })
-                    }
-                }
-            })
+    private fun divider(): View = View(themedContext).apply {
+        setBackgroundColor(PremiumColors.Divider)
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            themedContext.dp(1)
+        ).apply {
+            topMargin = themedContext.dp(10)
+            bottomMargin = themedContext.dp(10)
         }
+    }
+
+    private fun navigate(screen: AppScreen) {
+        (context as? MainActivity)?.navigate(screen)
+    }
 
     private fun settingsButton(onSettings: () -> Unit): MaterialButton =
         premiumSecondaryButton(themedContext, "분류 및 기본값 설정").apply {
