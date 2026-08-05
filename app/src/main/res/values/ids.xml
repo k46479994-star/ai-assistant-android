@@ -14,6 +14,7 @@
     <item name="nav_tasks" type="id" />
     <item name="nav_notes" type="id" />
     <item name="home_quick_input" type="id" />
+    <item name="home_voice_input" type="id" />
     <item name="home_settings" type="id" />
     <item name="task_filter_open" type="id" />
     <item name="task_filter_done" type="id" />
@@ -32,6 +33,7 @@
     <item name="settings_theme_apply" type="id" />
     <item name="settings_theme_error" type="id" />
     <item name="quick_input_text" type="id" />
+    <item name="quick_input_voice" type="id" />
     <item name="quick_input_submit" type="id" />
     <item name="quick_input_error" type="id" />
     <item name="quick_input_examples" type="id" />
