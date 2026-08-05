@@ -19,13 +19,24 @@ import java.util.Calendar
 
 enum class Tab { HOME, CHAT, CALENDAR, TODO, SETTINGS }
 
+data class ChatMessage(val text: String, val isUser: Boolean)
+
 class MainActivity : AppCompatActivity() {
     private lateinit var contentContainer: LinearLayout
+    private val chatMessages = mutableListOf<ChatMessage>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        seedChatMessages()
         setContentView(buildRoot())
         showTab(Tab.HOME)
+    }
+
+    private fun seedChatMessages() {
+        if (chatMessages.isNotEmpty()) return
+        chatMessages += ChatMessage(getString(R.string.welcome_message), false)
+        chatMessages += ChatMessage(getString(R.string.sample_user_message), true)
+        chatMessages += ChatMessage(getString(R.string.sample_assistant_message), false)
     }
 
     private fun buildRoot(): LinearLayout {
@@ -116,9 +127,9 @@ class MainActivity : AppCompatActivity() {
             0,
             1f
         ))
-        addBubble(chatContainer, getString(R.string.welcome_message), false)
-        addBubble(chatContainer, getString(R.string.sample_user_message), true)
-        addBubble(chatContainer, getString(R.string.sample_assistant_message), false)
+        chatMessages.forEach { message ->
+            addBubble(chatContainer, message.text, message.isUser)
+        }
 
         val inputRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -134,8 +145,12 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener {
                 val message = input.text.toString().trim()
                 if (message.isNotEmpty()) {
-                    addBubble(chatContainer, message, true)
-                    addBubble(chatContainer, getString(R.string.demo_reply), false)
+                    val userMessage = ChatMessage(message, true)
+                    val assistantMessage = ChatMessage(getString(R.string.demo_reply), false)
+                    chatMessages += userMessage
+                    chatMessages += assistantMessage
+                    addBubble(chatContainer, userMessage.text, userMessage.isUser)
+                    addBubble(chatContainer, assistantMessage.text, assistantMessage.isUser)
                     input.text.clear()
                     scroll.post { scroll.fullScroll(ScrollView.FOCUS_DOWN) }
                 }
