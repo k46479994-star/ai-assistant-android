@@ -1,7 +1,9 @@
 package com.example.aiassistant.ui
 
 import android.content.Context
+import android.view.ContextThemeWrapper
 import androidx.test.core.app.ApplicationProvider
+import com.example.aiassistant.R
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import org.junit.Assert.assertEquals
@@ -15,7 +17,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class PremiumUiTest {
-    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val appContext = ApplicationProvider.getApplicationContext<Context>()
+    private val context = ContextThemeWrapper(appContext, R.style.Theme_AiAssistant)
 
     @Test
     fun premiumDesignSystemUsesApprovedTokensAndComponents() {
