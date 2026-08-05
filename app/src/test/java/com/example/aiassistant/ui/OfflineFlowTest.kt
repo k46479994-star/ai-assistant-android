@@ -53,7 +53,11 @@ class OfflineFlowTest {
         database = Room.inMemoryDatabaseBuilder(
             application as Context,
             AppDatabase::class.java
-        ).allowMainThreadQueries().build()
+        )
+            .allowMainThreadQueries()
+            .setQueryExecutor { command -> command.run() }
+            .setTransactionExecutor { command -> command.run() }
+            .build()
         calendarGateway = RecordingCalendarGateway(launchResult = true)
         application.container = AppContainer(
             context = application,
@@ -210,8 +214,6 @@ class OfflineFlowTest {
 
     private fun settle() {
         repeat(5) {
-            Shadows.shadowOf(Looper.getMainLooper()).idle()
-            Robolectric.flushBackgroundThreadScheduler()
             Shadows.shadowOf(Looper.getMainLooper()).idle()
         }
     }
