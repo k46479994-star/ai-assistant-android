@@ -25,6 +25,17 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Verify offline manifest
+        run: |
+          if grep -q "android.permission.INTERNET" app/src/main/AndroidManifest.xml; then
+            echo "INTERNET permission is not allowed in the offline core build."
+            exit 1
+          fi
+          if grep -Eq "android.permission.(READ_CALENDAR|WRITE_CALENDAR)" app/src/main/AndroidManifest.xml; then
+            echo "Direct calendar permissions are not allowed in the offline core build."
+            exit 1
+          fi
+
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
 
