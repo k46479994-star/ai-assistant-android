@@ -3,6 +3,8 @@
     <application
         android:name=".AiAssistantApplication"
         android:allowBackup="false"
+        android:icon="@drawable/ic_launcher_smartvisor"
+        android:roundIcon="@drawable/ic_launcher_smartvisor"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.AiAssistant">
