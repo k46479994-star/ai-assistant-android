@@ -17,6 +17,22 @@ class SettingsStore(context: Context) : UserSettings {
         preferences.getInt(KEY_REMINDER_MINUTES, DEFAULT_REMINDER_MINUTES)
             .coerceIn(MIN_REMINDER_MINUTES, MAX_REMINDER_MINUTES)
 
+    fun saveDefaults(eventDurationMinutes: Int, reminderMinutes: Int) {
+        preferences.edit()
+            .putInt(
+                KEY_EVENT_DURATION_MINUTES,
+                eventDurationMinutes.coerceIn(
+                    MIN_EVENT_DURATION_MINUTES,
+                    MAX_EVENT_DURATION_MINUTES
+                )
+            )
+            .putInt(
+                KEY_REMINDER_MINUTES,
+                reminderMinutes.coerceIn(MIN_REMINDER_MINUTES, MAX_REMINDER_MINUTES)
+            )
+            .apply()
+    }
+
     companion object {
         private const val FILE_NAME = "offline_core_settings"
         private const val KEY_EVENT_DURATION_MINUTES = "event_duration_minutes"

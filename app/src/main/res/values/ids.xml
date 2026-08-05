@@ -14,6 +14,21 @@
     <item name="nav_tasks" type="id" />
     <item name="nav_notes" type="id" />
 
+    <item name="home_quick_input" type="id" />
+    <item name="home_settings" type="id" />
+    <item name="task_filter_open" type="id" />
+    <item name="task_filter_done" type="id" />
+    <item name="task_add" type="id" />
+    <item name="task_list" type="id" />
+    <item name="note_add" type="id" />
+    <item name="note_list" type="id" />
+    <item name="calendar_new_event" type="id" />
+    <item name="settings_duration" type="id" />
+    <item name="settings_reminder" type="id" />
+    <item name="settings_save" type="id" />
+    <item name="settings_error" type="id" />
+    <item name="settings_rule_list" type="id" />
+
     <item name="quick_input_text" type="id" />
     <item name="quick_input_submit" type="id" />
     <item name="quick_input_error" type="id" />

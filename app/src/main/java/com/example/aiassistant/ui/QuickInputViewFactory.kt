@@ -12,7 +12,10 @@ import android.widget.TextView
 import com.example.aiassistant.R
 
 class QuickInputViewFactory(private val context: Context) {
-    fun create(onSubmit: (String) -> Unit): View {
+    fun create(
+        initialText: String = "",
+        onSubmit: (String) -> Unit
+    ): View {
         val root = LinearLayout(context).apply {
             id = R.id.screen_quick_input
             orientation = LinearLayout.VERTICAL
@@ -41,6 +44,8 @@ class QuickInputViewFactory(private val context: Context) {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
             setPadding(20, 18, 20, 18)
             setBackgroundColor(Color.WHITE)
+            setText(initialText)
+            if (initialText.isNotEmpty()) setSelection(initialText.length)
         }
         root.addView(
             input,

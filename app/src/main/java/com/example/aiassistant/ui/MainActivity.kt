@@ -18,6 +18,7 @@ import com.example.aiassistant.classification.EventDraft
 import com.example.aiassistant.classification.ItemDraft
 import com.example.aiassistant.classification.NoteDraft
 import com.example.aiassistant.classification.TaskDraft
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import kotlinx.coroutines.launch
 
@@ -30,6 +31,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsButton: Button
     private var activeResult: ClassificationResult? = null
     private var activePreview: PreviewView? = null
+    private var currentScreen: AppScreen = AppScreen.HOME
+    private var navigationVersion: Long = 0
+    private var pendingQuickInputText: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +42,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun navigate(screen: AppScreen) {
+        currentScreen = screen
+        val version = ++navigationVersion
         settingsButton.visibility = if (screen == AppScreen.HOME) {
             View.VISIBLE
         } else {
@@ -47,15 +53,19 @@ class MainActivity : AppCompatActivity() {
             activePreview = null
         }
 
-        val screenView = createScreen(screen)
-        contentHost.removeAllViews()
-        contentHost.addView(
-            screenView,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
+        when (screen) {
+            AppScreen.HOME -> loadHome(version)
+            AppScreen.QUICK_INPUT -> attach(createQuickInputScreen())
+            AppScreen.PREVIEW -> attach(createPreviewScreen())
+            AppScreen.CALENDAR -> attach(
+                CalendarViewFactory(this).create { prefill ->
+                    openQuickInput(prefill)
+                }
             )
-        )
+            AppScreen.TASKS -> loadTasks(version)
+            AppScreen.NOTES -> loadNotes(version)
+            AppScreen.SETTINGS -> loadSettings(version)
+        }
     }
 
     private fun createRoot(): View = LinearLayout(this).apply {
@@ -151,20 +161,163 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun createScreen(screen: AppScreen): View = when (screen) {
-        AppScreen.HOME -> placeholder(R.id.screen_home, "홈")
-        AppScreen.QUICK_INPUT -> QuickInputViewFactory(this).create(::classifyInput)
-        AppScreen.PREVIEW -> createPreviewScreen()
-        AppScreen.CALENDAR -> placeholder(
-            R.id.screen_calendar,
-            "일정\n빠른 입력에서 일정을 만든 뒤 캘린더 앱에서 확인합니다."
+    private fun createQuickInputScreen(): View {
+        val initialText = pendingQuickInputText
+        pendingQuickInputText = ""
+        return QuickInputViewFactory(this).create(
+            initialText = initialText,
+            onSubmit = ::classifyInput
         )
-        AppScreen.TASKS -> placeholder(R.id.screen_tasks, "할 일")
-        AppScreen.NOTES -> placeholder(R.id.screen_notes, "메모")
-        AppScreen.SETTINGS -> placeholder(
-            R.id.screen_settings,
-            "설정\n기본 일정 60분 · 기본 알림 30분 전\nAI 사용은 기본적으로 꺼져 있습니다."
-        )
+    }
+
+    private fun openQuickInput(prefill: String = "") {
+        pendingQuickInputText = prefill
+        navigate(AppScreen.QUICK_INPUT)
+    }
+
+    private fun loadHome(version: Long) {
+        attach(loadingView(R.id.screen_home, "홈을 불러오는 중입니다."))
+        lifecycleScope.launch {
+            try {
+                val count = container.taskRepository.countOpenDueOn(LocalDate.now())
+                val notes = container.noteRepository.listLatest(3)
+                attachIfCurrent(
+                    AppScreen.HOME,
+                    version,
+                    HomeViewFactory(this@MainActivity).create(
+                        openTaskCount = count,
+                        latestNotes = notes,
+                        onQuickInput = { openQuickInput() },
+                        onSettings = { navigate(AppScreen.SETTINGS) }
+                    )
+                )
+            } catch (_: Exception) {
+                attachIfCurrent(
+                    AppScreen.HOME,
+                    version,
+                    loadingView(R.id.screen_home, "홈 정보를 불러오지 못했습니다.")
+                )
+            }
+        }
+    }
+
+    private fun loadTasks(version: Long) {
+        attach(loadingView(R.id.screen_tasks, "할 일을 불러오는 중입니다."))
+        lifecycleScope.launch {
+            try {
+                val tasks = container.taskRepository.listAll()
+                attachIfCurrent(
+                    AppScreen.TASKS,
+                    version,
+                    TaskViewFactory(this@MainActivity).create(
+                        tasks = tasks,
+                        onToggle = ::toggleTask,
+                        onAdd = { openQuickInput() }
+                    )
+                )
+            } catch (_: Exception) {
+                attachIfCurrent(
+                    AppScreen.TASKS,
+                    version,
+                    loadingView(R.id.screen_tasks, "할 일을 불러오지 못했습니다.")
+                )
+            }
+        }
+    }
+
+    private fun toggleTask(id: Long, completed: Boolean) {
+        lifecycleScope.launch {
+            try {
+                container.taskRepository.setCompleted(
+                    id = id,
+                    completed = completed,
+                    updatedAtEpochMillis = System.currentTimeMillis()
+                )
+                if (currentScreen == AppScreen.TASKS) navigate(AppScreen.TASKS)
+            } catch (_: Exception) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "할 일 상태를 변경하지 못했습니다.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    private fun loadNotes(version: Long) {
+        attach(loadingView(R.id.screen_notes, "메모를 불러오는 중입니다."))
+        lifecycleScope.launch {
+            try {
+                val notes = container.noteRepository.listLatest(100)
+                attachIfCurrent(
+                    AppScreen.NOTES,
+                    version,
+                    NoteViewFactory(this@MainActivity).create(
+                        notes = notes,
+                        onAdd = { openQuickInput() }
+                    )
+                )
+            } catch (_: Exception) {
+                attachIfCurrent(
+                    AppScreen.NOTES,
+                    version,
+                    loadingView(R.id.screen_notes, "메모를 불러오지 못했습니다.")
+                )
+            }
+        }
+    }
+
+    private fun loadSettings(version: Long) {
+        attach(loadingView(R.id.screen_settings, "설정을 불러오는 중입니다."))
+        lifecycleScope.launch {
+            try {
+                val rules = container.learnedRuleStore.listAll()
+                attachIfCurrent(
+                    AppScreen.SETTINGS,
+                    version,
+                    SettingsViewFactory(this@MainActivity).create(
+                        durationMinutes = container.settingsStore
+                            .defaultEventDurationMinutes(),
+                        reminderMinutes = container.settingsStore
+                            .defaultReminderMinutes(),
+                        rules = rules,
+                        onSave = { duration, reminder ->
+                            container.settingsStore.saveDefaults(duration, reminder)
+                            Toast.makeText(
+                                this@MainActivity,
+                                "설정을 저장했습니다.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            if (currentScreen == AppScreen.SETTINGS) {
+                                navigate(AppScreen.SETTINGS)
+                            }
+                        },
+                        onDeleteRule = ::deleteLearnedRule
+                    )
+                )
+            } catch (_: Exception) {
+                attachIfCurrent(
+                    AppScreen.SETTINGS,
+                    version,
+                    loadingView(R.id.screen_settings, "설정을 불러오지 못했습니다.")
+                )
+            }
+        }
+    }
+
+    private fun deleteLearnedRule(id: Long) {
+        lifecycleScope.launch {
+            try {
+                container.learnedRuleStore.delete(id)
+                if (currentScreen == AppScreen.SETTINGS) navigate(AppScreen.SETTINGS)
+            } catch (_: Exception) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "규칙을 삭제하지 못했습니다.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
     }
 
     private fun classifyInput(text: String) {
@@ -192,7 +345,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createPreviewScreen(): View {
-        val result = activeResult ?: return placeholder(
+        val result = activeResult ?: return loadingView(
             R.id.screen_preview,
             "분류할 내용이 없습니다. 빠른 입력에서 내용을 입력해 주세요."
         )
@@ -271,12 +424,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun placeholder(id: Int, label: String): View = TextView(this).apply {
+    private fun attachIfCurrent(
+        screen: AppScreen,
+        version: Long,
+        view: View
+    ) {
+        if (currentScreen == screen && navigationVersion == version) {
+            attach(view)
+        }
+    }
+
+    private fun attach(view: View) {
+        contentHost.removeAllViews()
+        contentHost.addView(
+            view,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+    }
+
+    private fun loadingView(id: Int, label: String): View = TextView(this).apply {
         this.id = id
         text = label
         gravity = Gravity.CENTER
-        textSize = 22f
-        setTextColor(Color.rgb(35, 31, 58))
+        textSize = 18f
+        setTextColor(Color.rgb(92, 88, 112))
         setPadding(24, 24, 24, 24)
     }
 
