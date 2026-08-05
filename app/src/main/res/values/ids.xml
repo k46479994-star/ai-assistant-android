@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="content_host" type="id" />
+    <item name="screen_home" type="id" />
+    <item name="screen_quick_input" type="id" />
+    <item name="screen_preview" type="id" />
+    <item name="screen_calendar" type="id" />
+    <item name="screen_tasks" type="id" />
+    <item name="screen_notes" type="id" />
+    <item name="screen_settings" type="id" />
+    <item name="nav_home" type="id" />
+    <item name="nav_quick_input" type="id" />
+    <item name="nav_calendar" type="id" />
+    <item name="nav_tasks" type="id" />
+    <item name="nav_notes" type="id" />
+
+    <item name="home_quick_input" type="id" />
+    <item name="home_settings" type="id" />
+    <item name="task_filter_open" type="id" />
+    <item name="task_filter_done" type="id" />
+    <item name="task_add" type="id" />
+    <item name="task_list" type="id" />
+    <item name="note_add" type="id" />
+    <item name="note_list" type="id" />
+    <item name="calendar_new_event" type="id" />
+    <item name="settings_duration" type="id" />
+    <item name="settings_reminder" type="id" />
+    <item name="settings_save" type="id" />
+    <item name="settings_error" type="id" />
+    <item name="settings_rule_list" type="id" />
+
+    <item name="quick_input_text" type="id" />
+    <item name="quick_input_submit" type="id" />
+    <item name="quick_input_error" type="id" />
+    <item name="quick_input_examples" type="id" />
+
+    <item name="preview_type" type="id" />
+    <item name="preview_title" type="id" />
+    <item name="preview_date" type="id" />
+    <item name="preview_time" type="id" />
+    <item name="preview_end_time" type="id" />
+    <item name="preview_reminder" type="id" />
+    <item name="preview_save" type="id" />
+    <item name="preview_cancel" type="id" />
+    <item name="preview_error" type="id" />
+    <item name="preview_remember" type="id" />
+    <item name="preview_keyword_container" type="id" />
+    <item name="preview_event_fields" type="id" />
+    <item name="preview_task_fields" type="id" />
+</resources>
