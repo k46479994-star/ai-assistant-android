@@ -1,12 +1,9 @@
 package com.example.aiassistant.ui
 
-import android.content.Context
-import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
-import androidx.test.core.app.ApplicationProvider
 import com.example.aiassistant.R
 import com.example.aiassistant.data.NoteEntity
 import com.google.android.material.button.MaterialButton
@@ -16,6 +13,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -23,14 +21,12 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class HomeInlineCaptureTest {
     @Test
-    fun homeOffersCompactInlineCaptureWithoutFakeAiOrWeather() {
-        val appContext = ApplicationProvider.getApplicationContext<Context>()
-        val context = ContextThemeWrapper(appContext, R.style.Theme_AiAssistant)
-        var submitted: String? = null
-        val view = HomeViewFactory(context).create(
+    fun homeOffersCompactInlineCaptureAndCarriesTextToQuickInput() {
+        val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        val view = HomeViewFactory(activity).create(
             openTaskCount = 2,
             latestNotes = emptyList<NoteEntity>(),
-            onQuickInput = { submitted = it },
+            onQuickInput = { activity.navigate(AppScreen.QUICK_INPUT) },
             onSettings = {}
         )
 
@@ -43,7 +39,9 @@ class HomeInlineCaptureTest {
 
         requireNotNull(input).setText("내일 오후 3시 병원")
         requireNotNull(submit).performClick()
-        assertEquals("내일 오후 3시 병원", submitted)
+
+        val quickInput = activity.findViewById<EditText>(R.id.quick_input_text)
+        assertEquals("내일 오후 3시 병원", quickInput.text.toString())
 
         val text = collectText(view)
         assertTrue(text.contains("오늘 할 일"))
