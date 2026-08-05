@@ -46,7 +46,7 @@ class HomePremiumUiTest {
 
         assertTrue(view is ScrollView)
         assertEquals(PremiumColors.Background, view.solidColor)
-        assertTrue(countViews<MaterialCardView>(view) >= 3)
+        assertTrue(countViews(view, MaterialCardView::class.java) >= 3)
 
         val quickInput = view.findViewById<MaterialButton>(R.id.home_quick_input)
         val settings = view.findViewById<MaterialButton>(R.id.home_settings)
@@ -70,11 +70,11 @@ class HomePremiumUiTest {
         assertTrue(settingsClicked)
     }
 
-    private inline fun <reified T : View> countViews(view: View): Int {
-        var count = if (view is T) 1 else 0
+    private fun countViews(view: View, targetClass: Class<out View>): Int {
+        var count = if (targetClass.isInstance(view)) 1 else 0
         if (view is ViewGroup) {
             for (index in 0 until view.childCount) {
-                count += countViews<T>(view.getChildAt(index))
+                count += countViews(view.getChildAt(index), targetClass)
             }
         }
         return count
