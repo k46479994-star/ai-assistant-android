@@ -12,7 +12,6 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.example.aiassistant.R
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
 class QuickInputViewFactory(private val context: Context) {
@@ -22,6 +21,9 @@ class QuickInputViewFactory(private val context: Context) {
         initialText: String = "",
         onSubmit: (String) -> Unit
     ): View {
+        val storedText = QuickInputPrefillStore.take()
+        val resolvedInitialText = initialText.ifBlank { storedText }
+
         val content = LinearLayout(themedContext).apply {
             id = R.id.screen_quick_input
             orientation = LinearLayout.VERTICAL
@@ -62,8 +64,8 @@ class QuickInputViewFactory(private val context: Context) {
             setTextColor(PremiumColors.TextPrimary)
             setHintTextColor(PremiumColors.TextSecondary)
             setBackgroundColor(PremiumColors.Surface)
-            setText(initialText)
-            if (initialText.isNotEmpty()) setSelection(initialText.length)
+            setText(resolvedInitialText)
+            if (resolvedInitialText.isNotEmpty()) setSelection(resolvedInitialText.length)
         }
 
         val error = TextView(themedContext).apply {
