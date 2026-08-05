@@ -16,6 +16,16 @@ import com.example.aiassistant.data.NoteEntity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
+internal object QuickInputPrefillStore {
+    private var pendingText: String = ""
+
+    fun put(text: String) {
+        pendingText = text
+    }
+
+    fun take(): String = pendingText.also { pendingText = "" }
+}
+
 class HomeViewFactory(private val context: Context) {
     private val themedContext: Context = ContextThemeWrapper(context, R.style.Theme_AiAssistant)
 
@@ -116,8 +126,8 @@ class HomeViewFactory(private val context: Context) {
 
                 addView(MaterialButton(themedContext).apply {
                     id = R.id.home_quick_input
-                    text = "바로 분류"
-                    contentDescription = "입력 내용을 바로 분류"
+                    text = "빠른 입력 · 바로 분류"
+                    contentDescription = "일정, 할 일 또는 메모로 바로 분류"
                     isAllCaps = false
                     minHeight = themedContext.dp(PremiumDimens.TouchTargetDp)
                     cornerRadius = themedContext.dp(18)
@@ -129,16 +139,8 @@ class HomeViewFactory(private val context: Context) {
                     insetTop = 0
                     insetBottom = 0
                     setOnClickListener {
-                        val text = input.text.toString().trim()
+                        QuickInputPrefillStore.put(input.text.toString().trim())
                         onQuickInput()
-                        if (text.isNotEmpty()) {
-                            (context as? MainActivity)
-                                ?.findViewById<EditText>(R.id.quick_input_text)
-                                ?.apply {
-                                    setText(text)
-                                    setSelection(text.length)
-                                }
-                        }
                     }
                 }, fullWidthParams().apply { topMargin = themedContext.dp(10) })
             })
