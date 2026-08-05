@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI 비서</string>
+    <string name="online_status">● 온라인</string>
+    <string name="welcome_message">안녕하세요. 일정과 할 일을 함께 관리해 드릴게요.</string>
+    <string name="sample_user_message">내일 오후 3시에 병원 일정 추가해 줘</string>
+    <string name="sample_assistant_message">내일 오후 3시 병원 일정을 추가할까요? 실제 저장은 확인 후 진행됩니다.</string>
+    <string name="message_hint">메시지를 입력하세요</string>
+    <string name="send">전송</string>
+    <string name="demo_reply">요청을 확인했습니다. 현재 버전은 UI 데모이며 다음 단계에서 AI와 캘린더를 연결합니다.</string>
+</resources>
