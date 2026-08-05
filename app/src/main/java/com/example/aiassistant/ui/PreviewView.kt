@@ -39,6 +39,8 @@ class PreviewView(context: Context) : LinearLayout(context) {
         errorView.visibility = View.VISIBLE
     }
 
+    override fun getSolidColor(): Int = PremiumColors.Background
+
     private fun updateSaveEnabled() {
         if (::saveButton.isInitialized) {
             saveButton.isEnabled = formValid && !saving
