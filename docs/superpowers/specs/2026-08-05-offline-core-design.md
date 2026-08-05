@@ -4,7 +4,7 @@
 
 앱은 OpenAI, 다른 생성형 AI, 인터넷 연결, API 키가 없어도 일정·할 일·메모를 생성하고 관리할 수 있어야 한다. AI는 나중에 낮은 신뢰도의 문장을 보조하는 선택 기능으로만 추가하며, 기본 동작을 대체하지 않는다.
 
-이 설계의 핵심 경험은 다음과 같다.
+핵심 흐름은 다음과 같다.
 
 1. 사용자가 하나의 빠른 입력창에 자연어를 입력한다.
 2. 앱이 기기 안에서 일정·할 일·메모 중 하나로 분류하고 날짜·시간·알림을 추출한다.
@@ -65,8 +65,8 @@
 
 ### 4.2 저장 정책
 
-- 모든 항목은 기본적으로 저장 전 확인한다.
-- 조회는 확인 없이 실행할 수 있지만, 생성·수정·삭제는 항상 사용자의 명시적인 버튼 입력이 필요하다.
+- 모든 항목은 저장 전 확인한다.
+- 조회 동작은 확인 없이 실행할 수 있지만, 생성·수정·삭제는 항상 사용자의 명시적인 버튼 입력이 필요하다.
 - 신뢰도가 낮으면 유형을 임의로 확정하지 않고 `일정 / 할 일 / 메모` 선택 화면을 보여준다.
 - 필수 필드가 없으면 저장 버튼을 비활성화하고 누락된 필드만 입력받는다.
 
@@ -75,7 +75,7 @@
 | 입력 | 예상 유형 | 추출 결과 |
 |---|---|---|
 | `내일 오후 3시 병원` | 일정 | 내일, 15:00, 기본 1시간 |
-| `금요일 오전 회의 10분 전 알림` | 일정 | 다음 금요일, 오전 시간 입력 요구, 10분 전 |
+| `금요일 오전 회의 10분 전 알림` | 일정 | 다음 금요일, 구체적인 시각 입력 요구, 10분 전 |
 | `금요일까지 보고서 제출` | 할 일 | 제목 `보고서 제출`, 마감일 다음 금요일 |
 | `우유 사기` | 할 일 | 제목 `우유 사기`, 마감일 없음 |
 | `교재 3장 복습하기` | 할 일 | 제목 그대로, 마감일 없음 |
@@ -111,6 +111,7 @@ com.example.aiassistant
 │  ├─ RuleBasedClassifier.kt
 │  ├─ KoreanDateTimeParser.kt
 │  ├─ TitleExtractor.kt
+│  ├─ KeywordCandidateExtractor.kt
 │  └─ OfflineInputProcessor.kt
 ├─ data
 │  ├─ AppDatabase.kt
@@ -122,7 +123,8 @@ com.example.aiassistant
 │  ├─ NoteRepository.kt
 │  ├─ LearnedRuleEntity.kt
 │  ├─ LearnedRuleDao.kt
-│  └─ LearnedRuleStore.kt
+│  ├─ LearnedRuleStore.kt
+│  └─ SettingsStore.kt
 ├─ calendar
 │  └─ CalendarGateway.kt
 └─ ui
@@ -136,6 +138,8 @@ com.example.aiassistant
 ```
 
 각 분류·파싱 클래스는 Android UI에 의존하지 않는 순수 Kotlin 코드로 작성해 단위 테스트가 가능하게 한다. Room과 캘린더 접근은 인터페이스 뒤에 두어 테스트와 향후 교체를 쉽게 한다.
+
+Room DAO와 Repository의 저장·조회 함수는 `suspend`로 작성하고 `lifecycleScope`에서 호출한다. 데이터베이스 작업은 메인 스레드를 차단하지 않는다. 설정값은 앱 전용 `SharedPreferences`를 감싼 `SettingsStore`에서 관리한다.
 
 ## 6. 분류 모델
 
@@ -188,7 +192,9 @@ enum class RequiredField { TYPE, TITLE, EVENT_DATE, EVENT_TIME }
 
 #### 학습 규칙
 
-사용자가 분류를 변경하고 `이 표현을 기억`을 선택하면 선택한 키워드에 해당 유형 점수 `+6`을 적용한다. 동일 키워드 규칙은 하나만 유지하며 사용자가 설정에서 조회·삭제할 수 있다.
+사용자가 제안된 유형을 변경하면 `KeywordCandidateExtractor`가 날짜·시간·명령어·불용어를 제거한 뒤 2자 이상 20자 이하의 후보 토큰을 만든다. 미리보기 화면은 후보를 칩으로 표시하며, 사용자가 `이 표현을 기억`을 켜고 후보 하나를 직접 선택해야 규칙을 저장한다.
+
+선택된 키워드는 공백과 문장부호를 정규화한 뒤 저장한다. 이후 입력에서 동일한 정규화 토큰이 발견되면 선택한 유형 점수에 `+6`을 적용한다. 부분 문자열만 일치하는 경우에는 적용하지 않는다. 동일 키워드 규칙은 하나만 유지하며 사용자가 설정에서 조회·삭제할 수 있다.
 
 ### 6.3 신뢰도
 
@@ -215,8 +221,9 @@ enum class RequiredField { TYPE, TITLE, EVENT_DATE, EVENT_TIME }
 
 ### 해석 규칙
 
-- 요일은 가장 가까운 미래 날짜를 선택한다.
-- 같은 요일이며 명시 시간이 이미 지났으면 다음 주로 이동한다.
+- 요일은 가장 가까운 해당 날짜를 선택한다.
+- 같은 요일에 시간이 없으면 오늘로 해석한다.
+- 같은 요일에 시간이 있고 해당 시간이 이미 지났으면 다음 주로 이동한다.
 - 종료 시간이 없으면 일정 길이는 기본 1시간이다.
 - 알림이 없으면 설정의 기본값을 사용하며 초기값은 30분 전이다.
 - 날짜는 있지만 일정 시간이 없으면 `EVENT_TIME`을 누락 필드로 반환한다.
@@ -265,11 +272,13 @@ NoteEntity(
 LearnedRuleEntity(
     id: Long,
     normalizedKeyword: String,
-    targetType: InputType,
+    targetTypeName: String,
     createdAtEpochMillis: Long,
     lastUsedAtEpochMillis: Long
 )
 ```
+
+`targetTypeName`에는 `EVENT`, `TASK`, `NOTE`만 저장하며 Repository에서 `InputType`으로 변환한다. 알 수 없는 값은 규칙을 무시하고 설정 화면에서 삭제 가능한 잘못된 항목으로 표시한다.
 
 Room 스키마 버전은 `1`로 시작하며, 데이터베이스 파일은 앱 전용 저장소에 둔다. 네트워크 전송은 하지 않는다.
 
@@ -296,6 +305,7 @@ Room 스키마 버전은 `1`로 시작하며, 데이터베이스 파일은 앱 �
 - 제목 편집
 - 유형에 맞는 날짜·시간·알림 필드
 - `이 표현을 기억` 옵션은 사용자가 유형을 변경했을 때만 표시
+- 기억 옵션을 켜면 후보 키워드 중 하나를 선택해야 함
 - 취소와 저장 버튼
 
 ### 일정
@@ -337,17 +347,29 @@ Room 스키마 버전은 `1`로 시작하며, 데이터베이스 파일은 앱 �
 
 ## 12. AI 확장 경계
 
-향후 확장을 위해 다음 인터페이스를 둔다.
+로컬 분류기는 다음 인터페이스를 사용한다.
 
 ```kotlin
-interface InputClassifier {
-    fun classify(text: String, now: ZonedDateTime): ClassificationResult
+interface LocalInputClassifier {
+    fun classify(
+        text: String,
+        now: ZonedDateTime,
+        learnedRules: List<LearnedRule>
+    ): ClassificationResult
 }
 ```
 
-기본 구현은 항상 `RuleBasedClassifier`다. 향후 AI 기능이 켜져 있고 로컬 결과가 `LOW`일 때만 별도 `AiFallbackClassifier`를 호출할 수 있다. AI 호출 실패, 네트워크 없음, API 한도 초과 시 로컬 결과와 수동 선택 화면으로 즉시 복귀한다.
+향후 네트워크 AI는 별도 비동기 인터페이스로 추가한다.
 
-앱의 핵심 데이터는 AI 응답 형식이나 특정 공급자에 의존하지 않는다.
+```kotlin
+interface OptionalFallbackClassifier {
+    suspend fun classify(text: String, now: ZonedDateTime): ClassificationResult?
+}
+```
+
+기본 구현은 항상 `RuleBasedClassifier`다. 향후 AI 기능이 켜져 있고 로컬 결과가 `LOW`일 때만 `OptionalFallbackClassifier`를 호출할 수 있다. AI 호출 실패, 네트워크 없음, API 한도 초과 시 로컬 결과와 수동 선택 화면으로 즉시 복귀한다.
+
+앱의 핵심 데이터는 AI 응답 형식이나 특정 공급자에 의존하지 않는다. 오프라인 코어는 `INTERNET` 권한 없이도 빌드되고 동작한다.
 
 ## 13. 오류 처리
 
@@ -358,7 +380,8 @@ interface InputClassifier {
 - 캘린더 앱 없음: 미리보기 유지와 오류 토스트
 - Room 저장 실패: 입력과 미리보기를 유지하고 재시도 버튼 표시
 - 중복 저장 버튼 연타: 저장 중 버튼 비활성화
-- 학습 키워드가 너무 짧거나 날짜·시간뿐임: 규칙을 만들지 않고 일반 저장만 수행
+- 학습 키워드 후보가 없거나 선택하지 않음: 규칙은 저장하지 않고 항목만 정상 저장
+- 저장된 학습 유형 값이 잘못됨: 해당 규칙을 분류에 적용하지 않음
 
 ## 14. 테스트 전략
 
@@ -368,6 +391,7 @@ interface InputClassifier {
 - 일정·할 일·메모 예제별 분류 점수와 신뢰도
 - 동점과 낮은 점수의 `AMBIGUOUS` 처리
 - 제목 추출
+- 학습 후보 키워드 추출·정규화·완전 토큰 일치
 - 학습 규칙 적용과 삭제
 - 과거 날짜와 필수 필드 검증
 
@@ -376,13 +400,15 @@ interface InputClassifier {
 - Room 인메모리 데이터베이스에서 할 일 저장·완료·조회
 - 메모 저장·최신순 조회
 - 학습 규칙의 키워드 고유성
+- 잘못된 `targetTypeName`을 안전하게 무시하는지 확인
 
 ### UI 테스트
 
 - 입력 → 미리보기 → 할 일 저장
-- 입력 → 분류 수정 → 학습 규칙 저장
+- 입력 → 분류 수정 → 키워드 선택 → 학습 규칙 저장
 - 일정 미리보기 → Calendar Insert 인텐트 생성
 - 필수 필드 누락 시 저장 버튼 비활성화
+- 저장 중 버튼을 반복해서 눌러도 중복 생성되지 않음
 
 ### CI
 
