@@ -37,7 +37,7 @@ class NoteViewFactory(private val context: Context) {
             setTextColor(PremiumColors.TextPrimary)
             setTypeface(typeface, Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        heading.addView(premiumSecondaryButton(themedContext, "＋ 추가").apply {
+        heading.addView(premiumSecondaryButton(themedContext, "추가").apply {
             id = R.id.note_add
             contentDescription = "새 메모 추가"
             setOnClickListener { onAdd() }
