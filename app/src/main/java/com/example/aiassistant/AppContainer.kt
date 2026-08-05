@@ -12,11 +12,15 @@ import com.example.aiassistant.data.NoteRepository
 import com.example.aiassistant.data.SettingsStore
 import com.example.aiassistant.data.TaskRepository
 
-class AppContainer(context: Context) {
+class AppContainer(
+    context: Context,
+    private val databaseOverride: AppDatabase? = null,
+    private val calendarGatewayOverride: CalendarGateway? = null
+) {
     private val applicationContext = context.applicationContext
 
     val database: AppDatabase by lazy {
-        Room.databaseBuilder(
+        databaseOverride ?: Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
             DATABASE_NAME
@@ -52,7 +56,7 @@ class AppContainer(context: Context) {
     }
 
     val calendarGateway: CalendarGateway by lazy {
-        CalendarGateway()
+        calendarGatewayOverride ?: CalendarGateway()
     }
 
     private companion object {

@@ -3,7 +3,13 @@ package com.example.aiassistant
 import android.app.Application
 
 class AiAssistantApplication : Application() {
-    val container: AppContainer by lazy {
-        AppContainer(this)
+    lateinit var container: AppContainer
+        internal set
+
+    override fun onCreate() {
+        super.onCreate()
+        if (!::container.isInitialized) {
+            container = AppContainer(this)
+        }
     }
 }

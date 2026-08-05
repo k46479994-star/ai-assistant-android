@@ -371,20 +371,28 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val now = System.currentTimeMillis()
-                val destination = when (draft) {
-                    is EventDraft -> {
-                        val launched = container.calendarGateway.launch(
-                            this@MainActivity,
-                            draft
-                        )
-                        if (!launched) {
-                            preview.setSaving(false)
-                            preview.showError("사용 가능한 캘린더 앱이 없습니다")
-                            return@launch
-                        }
-                        AppScreen.CALENDAR
+                if (draft is EventDraft) {
+                    val launched = container.calendarGateway.launch(
+                        this@MainActivity,
+                        draft
+                    )
+                    if (!launched) {
+                        preview.setSaving(false)
+                        preview.showError("사용 가능한 캘린더 앱이 없습니다")
+                        return@launch
                     }
+                    if (rememberSelection != null) {
+                        container.learnedRuleStore.upsert(
+                            keyword = rememberSelection.normalizedKeyword,
+                            targetType = rememberSelection.targetType,
+                            nowEpochMillis = now
+                        )
+                    }
+                    preview.setSaving(false)
+                    return@launch
+                }
 
+                val destination = when (draft) {
                     is TaskDraft -> {
                         container.taskRepository.insert(
                             title = draft.title,
@@ -403,6 +411,8 @@ class MainActivity : AppCompatActivity() {
                         )
                         AppScreen.NOTES
                     }
+
+                    is EventDraft -> error("Event draft handled above")
                 }
 
                 if (rememberSelection != null) {

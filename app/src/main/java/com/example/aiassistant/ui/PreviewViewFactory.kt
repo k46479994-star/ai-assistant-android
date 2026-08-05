@@ -24,7 +24,7 @@ import com.example.aiassistant.classification.KeywordCandidateExtractor
 import java.time.LocalDate
 
 class PreviewViewFactory(private val context: Context) {
-    private val typeOptions = listOf(
+    private val concreteTypeOptions = listOf(
         TypeOption("일정", ClassifiedInputType.EVENT),
         TypeOption("할 일", ClassifiedInputType.TASK),
         TypeOption("메모", ClassifiedInputType.NOTE)
@@ -55,6 +55,11 @@ class PreviewViewFactory(private val context: Context) {
             setPadding(0, 6, 0, 16)
         })
 
+        val typeOptions = if (result.suggestedType == ClassifiedInputType.AMBIGUOUS) {
+            listOf(TypeOption("유형 선택", ClassifiedInputType.AMBIGUOUS)) + concreteTypeOptions
+        } else {
+            concreteTypeOptions
+        }
         val spinner = Spinner(context).apply {
             id = R.id.preview_type
             adapter = ArrayAdapter(
@@ -190,12 +195,13 @@ class PreviewViewFactory(private val context: Context) {
 
         val initialType = result.suggestedType.takeIf {
             it in typeOptions.map(TypeOption::type)
-        } ?: ClassifiedInputType.EVENT
+        } ?: ClassifiedInputType.AMBIGUOUS
         var currentType = initialType
         var latestValidation: DraftValidationResult? = null
 
         fun updateTypeSpecificViews() {
-            val hasDate = currentType != ClassifiedInputType.NOTE
+            val hasDate = currentType == ClassifiedInputType.EVENT ||
+                currentType == ClassifiedInputType.TASK
             dateContainer.visibility = if (hasDate) View.VISIBLE else View.GONE
             eventFields.visibility = if (currentType == ClassifiedInputType.EVENT) {
                 View.VISIBLE
@@ -208,7 +214,8 @@ class PreviewViewFactory(private val context: Context) {
                 "저장"
             }
 
-            val changed = currentType != result.suggestedType
+            val changed = currentType != ClassifiedInputType.AMBIGUOUS &&
+                currentType != result.suggestedType
             remember.visibility = if (changed) View.VISIBLE else View.GONE
             keywordContainer.visibility = if (changed && candidates.isNotEmpty()) {
                 View.VISIBLE

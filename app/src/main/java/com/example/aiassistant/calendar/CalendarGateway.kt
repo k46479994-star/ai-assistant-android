@@ -8,8 +8,8 @@ import com.example.aiassistant.classification.EventDraft
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
-class CalendarGateway {
-    fun buildInsertIntent(
+open class CalendarGateway {
+    open fun buildInsertIntent(
         event: EventDraft,
         zoneId: ZoneId = ZoneId.systemDefault()
     ): Intent {
@@ -32,7 +32,7 @@ class CalendarGateway {
         }
     }
 
-    fun launch(activity: Activity, event: EventDraft): Boolean = try {
+    open fun launch(activity: Activity, event: EventDraft): Boolean = try {
         activity.startActivity(buildInsertIntent(event))
         true
     } catch (_: ActivityNotFoundException) {
